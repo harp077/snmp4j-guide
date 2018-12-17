@@ -1,10 +1,4 @@
-package net.intelie.snmp; /**
- * Created by IntelliJ IDEA.
- * User: anna
- * Date: Sep 23, 2010
- * Time: 5:36:22 PM
- * To change this template use File | Settings | File Templates.
- */
+package net.intelie.snmp; 
 
 import org.snmp4j.CommunityTarget;
 import org.snmp4j.PDU;

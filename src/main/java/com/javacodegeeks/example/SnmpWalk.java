@@ -20,6 +20,8 @@ import org.snmp4j.util.TreeEvent;
 import org.snmp4j.util.TreeUtils;
 
 public class SnmpWalk {
+    
+    static String IF_MIB=".1.3.6.1.2.1.2.2.1";
 
     public static void main(String[] args) throws Exception {
         CommunityTarget target = new CommunityTarget();
@@ -29,16 +31,35 @@ public class SnmpWalk {
         target.setTimeout(1500);
         target.setVersion(SnmpConstants.version2c);
 
-        Map<String, String> result = doWalk(".1.3.6.1.2.1.2.2", target); // ifTable, mib-2 interfaces
+        Map<String, String> result = doWalk(IF_MIB, target); // ifTable, mib-2 interfaces
 
         for (Map.Entry<String, String> entry : result.entrySet()) {
+            if (entry.getKey().startsWith(IF_MIB+".1.")) {
+                System.out.println("ifIndex" + entry.getKey().replace(IF_MIB+".1", "") + ": " + entry.getValue());
+            }            
             if (entry.getKey().startsWith(".1.3.6.1.2.1.2.2.1.2.")) {
-                System.out.println("ifDescr" + entry.getKey().replace(".1.3.6.1.2.1.2.2.1.2", "") + ": " + entry.getValue());
+                System.out.println("ifDescr" + entry.getKey().replace(IF_MIB+".2", "") + ": " + entry.getValue());
             }
             if (entry.getKey().startsWith(".1.3.6.1.2.1.2.2.1.3.")) {
-                System.out.println("ifType" + entry.getKey().replace(".1.3.6.1.2.1.2.2.1.3", "") + ": " + entry.getValue());
+                System.out.println("ifType"  + entry.getKey().replace(IF_MIB+".3", "") + ": " + entry.getValue());
             }
+            if (entry.getKey().startsWith(".1.3.6.1.2.1.2.2.1.4.")) {
+                System.out.println("ifMtu"   + entry.getKey().replace(IF_MIB+".4", "") + ": " + entry.getValue());
+            }   
+            if (entry.getKey().startsWith(".1.3.6.1.2.1.2.2.1.5.")) {
+                System.out.println("ifSpeed" + entry.getKey().replace(IF_MIB+".5", "") + ": " + entry.getValue());
+            }  
+            if (entry.getKey().startsWith(".1.3.6.1.2.1.2.2.1.9.")) {
+                System.out.println("ifLastChange" + entry.getKey().replace(IF_MIB+".9", "") + ": " + entry.getValue());
+            } 
+            if (entry.getKey().startsWith(".1.3.6.1.2.1.2.2.1.10.")) {
+                System.out.println("ifInOctets" + entry.getKey().replace(IF_MIB+".10", "") + ": " + entry.getValue());
+            }  
+            if (entry.getKey().startsWith(".1.3.6.1.2.1.2.2.1.16.")) {
+                System.out.println("ifOutOctets" + entry.getKey().replace(IF_MIB+".16", "") + ": " + entry.getValue());
+            }             
         }
+        System.out.println("\n"+result);
     }
 
     public static Map<String, String> doWalk(String tableOid, Target target) throws IOException {
