@@ -26,51 +26,29 @@ public class SnmpWalk {
     static String IF_MIB=".1.3.6.1.2.1.2.2.1.2";  // ifDescr
     static Set<String> ifset=new HashSet<>();
     static String IP="demo.snmplabs.com";
-    static String port="161";
     static String[] keyArray;
+    static Map<String, String> result;
+    static String snmp_comm="public";
+    static int snmp_vers=SnmpConstants.version2c;
+    static String snmp_port="161";    
     
 
     public static void main(String[] args) throws Exception {
         CommunityTarget target = new CommunityTarget();
-        target.setCommunity(new OctetString("public"));
-        target.setAddress(GenericAddress.parse("udp:"+IP+"/"+port)); // supply your own IP and port
+        target.setCommunity(new OctetString(snmp_comm));
+        target.setAddress(GenericAddress.parse("udp:"+IP+"/"+snmp_port)); // supply your own IP and snmp_port
         target.setRetries(1);
         target.setTimeout(1000);
-        target.setVersion(SnmpConstants.version2c);
-
-        Map<String, String> result = doWalk(IF_MIB, target); // ifTable, mib-2 interfaces
-
+        target.setVersion(snmp_vers);
+        result = doWalk(IF_MIB, target); // ifTable, mib-2 interfaces
         for (Map.Entry<String, String> entry : result.entrySet()) {
-            keyArray=entry.getKey().replace(".","-").split("-");
-            /*if (entry.getKey().startsWith(IF_MIB+".1.")) {
-                System.out.println("ifIndex" + entry.getKey() + ": " + entry.getValue());
-            } */           
-            if (entry.getKey().startsWith(".1.3.6.1.2.1.2.2.1.2.")) {
-                ifset.add(keyArray[keyArray.length-1]+":"+entry.getValue());
-                System.out.println("ifDescr" + entry.getKey() + ": " + entry.getValue());
-            }
-            /*if (entry.getKey().startsWith(".1.3.6.1.2.1.2.2.1.3.")) {
-                System.out.println("ifType"  + entry.getKey().replace(IF_MIB+".3", "") + ": " + entry.getValue());
-            }
-            if (entry.getKey().startsWith(".1.3.6.1.2.1.2.2.1.4.")) {
-                System.out.println("ifMtu"   + entry.getKey().replace(IF_MIB+".4", "") + ": " + entry.getValue());
-            }   
-            if (entry.getKey().startsWith(".1.3.6.1.2.1.2.2.1.5.")) {
-                System.out.println("ifSpeed" + entry.getKey().replace(IF_MIB+".5", "") + ": " + entry.getValue());
-            }  
-            if (entry.getKey().startsWith(".1.3.6.1.2.1.2.2.1.9.")) {
-                System.out.println("ifLastChange" + entry.getKey().replace(IF_MIB+".9", "") + ": " + entry.getValue());
-            } 
-            if (entry.getKey().startsWith(".1.3.6.1.2.1.2.2.1.10.")) {
-                System.out.println("ifInOctets" + entry.getKey().replace(IF_MIB+".10", "") + ": " + entry.getValue());
-            }  
-            if (entry.getKey().startsWith(".1.3.6.1.2.1.2.2.1.16.")) {
-                System.out.println("ifOutOctets" + entry.getKey().replace(IF_MIB+".16", "") + ": " + entry.getValue());
-            } */
-            System.out.println("\n"+keyArray[keyArray.length-1]); 
+            keyArray=entry.getKey().replace(".","-").split("-"); // entry.getKey() = .1.3.6.1.2.1.2.2.1.2.*
+            ifset.add(keyArray[keyArray.length-1]+":"+entry.getValue());
+            //System.out.println(" ifDescr: " + entry.getKey() + " = " + entry.getValue());
+            //System.out.println("\n "+keyArray[keyArray.length-1]); 
         }
-        System.out.println("\n"+result);
-        System.out.println("\n"+ifset);
+        System.out.println("\n Walk Map = "+result);
+        System.out.println("\n Ports set = "+ifset);
     }
 
     public static Map<String, String> doWalk(String tableOid, Target target) throws IOException {
