@@ -1,6 +1,7 @@
 package com.javacodegeeks.example;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -27,28 +28,37 @@ public class SnmpWalk {
     static Set<String> ifset=new HashSet<>();
     static String IP="demo.snmplabs.com";
     static String[] keyArray;
-    static Map<String, String> result;
+    static Map<String, String> walkMap;
+    static Map<String, Integer> versionMap=new HashMap<>();
     static String snmp_comm="public";
-    static int snmp_vers=SnmpConstants.version2c;
-    static String snmp_port="161";    
+    static String snmp_vers="2";//SnmpConstants.version2c;
+    static String snmp_port="161";   
+    
+    static {
+       versionMap.put("1", SnmpConstants.version1);
+       versionMap.put("2", SnmpConstants.version2c);
+       versionMap.put("3", SnmpConstants.version3);
+    }
     
 
     public static void main(String[] args) throws Exception {
         CommunityTarget target = new CommunityTarget();
         target.setCommunity(new OctetString(snmp_comm));
         target.setAddress(GenericAddress.parse("udp:"+IP+"/"+snmp_port)); // supply your own IP and snmp_port
-        target.setRetries(1);
+        target.setRetries(2);
         target.setTimeout(1000);
-        target.setVersion(snmp_vers);
-        result = doWalk(IF_MIB, target); // ifTable, mib-2 interfaces
-        for (Map.Entry<String, String> entry : result.entrySet()) {
+        target.setVersion(versionMap.get(snmp_vers));
+        walkMap = doWalk(IF_MIB, target); // ifTable, mib-2 interfaces
+        for (Map.Entry<String, String> entry : walkMap.entrySet()) {
             keyArray=entry.getKey().replace(".","-").split("-"); // entry.getKey() = .1.3.6.1.2.1.2.2.1.2.*
             ifset.add(keyArray[keyArray.length-1]+":"+entry.getValue());
             //System.out.println(" ifDescr: " + entry.getKey() + " = " + entry.getValue());
             //System.out.println("\n "+keyArray[keyArray.length-1]); 
         }
-        System.out.println("\n Walk Map = "+result);
-        System.out.println("\n Ports set = "+ifset);
+        System.out.println("\n Walk Map = "+walkMap);
+        System.out.println("\n Ports Set = "+ifset);
+        System.out.println("\n Last Port Index  = " + ifset.toArray()[ifset.size()-1].toString().split(":")[0]);        
+        System.out.println("\n Version Map = "+versionMap);
     }
 
     public static Map<String, String> doWalk(String tableOid, Target target) throws IOException {
