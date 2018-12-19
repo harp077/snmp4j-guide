@@ -1,8 +1,10 @@
 package com.javacodegeeks.example;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import org.snmp4j.CommunityTarget;
 import org.snmp4j.Snmp;
@@ -21,26 +23,33 @@ import org.snmp4j.util.TreeUtils;
 
 public class SnmpWalk {
     
-    static String IF_MIB=".1.3.6.1.2.1.2.2.1";
+    static String IF_MIB=".1.3.6.1.2.1.2.2.1.2";  // ifDescr
+    static Set<String> ifset=new HashSet<>();
+    static String IP="demo.snmplabs.com";
+    static String port="161";
+    static String[] keyArray;
+    
 
     public static void main(String[] args) throws Exception {
         CommunityTarget target = new CommunityTarget();
         target.setCommunity(new OctetString("public"));
-        target.setAddress(GenericAddress.parse("udp:demo.snmplabs.com/161")); // supply your own IP and port
-        target.setRetries(2);
-        target.setTimeout(1500);
+        target.setAddress(GenericAddress.parse("udp:"+IP+"/"+port)); // supply your own IP and port
+        target.setRetries(1);
+        target.setTimeout(1000);
         target.setVersion(SnmpConstants.version2c);
 
         Map<String, String> result = doWalk(IF_MIB, target); // ifTable, mib-2 interfaces
 
         for (Map.Entry<String, String> entry : result.entrySet()) {
-            if (entry.getKey().startsWith(IF_MIB+".1.")) {
-                System.out.println("ifIndex" + entry.getKey().replace(IF_MIB+".1", "") + ": " + entry.getValue());
-            }            
+            keyArray=entry.getKey().replace(".","-").split("-");
+            /*if (entry.getKey().startsWith(IF_MIB+".1.")) {
+                System.out.println("ifIndex" + entry.getKey() + ": " + entry.getValue());
+            } */           
             if (entry.getKey().startsWith(".1.3.6.1.2.1.2.2.1.2.")) {
-                System.out.println("ifDescr" + entry.getKey().replace(IF_MIB+".2", "") + ": " + entry.getValue());
+                ifset.add(keyArray[keyArray.length-1]+":"+entry.getValue());
+                System.out.println("ifDescr" + entry.getKey() + ": " + entry.getValue());
             }
-            if (entry.getKey().startsWith(".1.3.6.1.2.1.2.2.1.3.")) {
+            /*if (entry.getKey().startsWith(".1.3.6.1.2.1.2.2.1.3.")) {
                 System.out.println("ifType"  + entry.getKey().replace(IF_MIB+".3", "") + ": " + entry.getValue());
             }
             if (entry.getKey().startsWith(".1.3.6.1.2.1.2.2.1.4.")) {
@@ -57,9 +66,11 @@ public class SnmpWalk {
             }  
             if (entry.getKey().startsWith(".1.3.6.1.2.1.2.2.1.16.")) {
                 System.out.println("ifOutOctets" + entry.getKey().replace(IF_MIB+".16", "") + ": " + entry.getValue());
-            }             
+            } */
+            System.out.println("\n"+keyArray[keyArray.length-1]); 
         }
         System.out.println("\n"+result);
+        System.out.println("\n"+ifset);
     }
 
     public static Map<String, String> doWalk(String tableOid, Target target) throws IOException {
@@ -67,14 +78,12 @@ public class SnmpWalk {
         TransportMapping<? extends Address> transport = new DefaultUdpTransportMapping();
         Snmp snmp = new Snmp(transport);
         transport.listen();
-
         TreeUtils treeUtils = new TreeUtils(snmp, new DefaultPDUFactory());
         List<TreeEvent> events = treeUtils.getSubtree(target, new OID(tableOid));
         if (events == null || events.size() == 0) {
             System.out.println("Error: Unable to read table...");
             return result;
         }
-
         for (TreeEvent event : events) {
             if (event == null) {
                 continue;
@@ -83,7 +92,6 @@ public class SnmpWalk {
                 System.out.println("Error: table OID [" + tableOid + "] " + event.getErrorMessage());
                 continue;
             }
-
             VariableBinding[] varBindings = event.getVariableBindings();
             if (varBindings == null || varBindings.length == 0) {
                 continue;
@@ -92,13 +100,10 @@ public class SnmpWalk {
                 if (varBinding == null) {
                     continue;
                 }
-
                 result.put("." + varBinding.getOid().toString(), varBinding.getVariable().toString());
             }
-
         }
         snmp.close();
-
         return result;
     }
 
