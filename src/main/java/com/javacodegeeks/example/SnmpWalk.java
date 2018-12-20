@@ -24,12 +24,13 @@ import org.snmp4j.util.TreeUtils;
 
 public class SnmpWalk {
     
-    static String IF_MIB=".1.3.6.1.2.1.2.2.1.2";  // ifDescr
+    static String IF_MIB_OID=".1.3.6.1.2.1.2.2.1.2";  // ifDescr
     static Set<String> ifset=new HashSet<>();
     static String IP="demo.snmplabs.com";
     static String[] keyArray;
     static Map<String, String> walkMap;
     static Map<String, Integer> versionMap=new HashMap<>();
+    static String marked_ports="";
     static String snmp_comm="public";
     static String snmp_vers="2";//SnmpConstants.version2c;
     static String snmp_port="161";   
@@ -42,16 +43,11 @@ public class SnmpWalk {
     
 
     public static void main(String[] args) throws Exception {
-        CommunityTarget target = new CommunityTarget();
-        target.setCommunity(new OctetString(snmp_comm));
-        target.setAddress(GenericAddress.parse("udp:"+IP+"/"+snmp_port)); // supply your own IP and snmp_port
-        target.setRetries(2);
-        target.setTimeout(1000);
-        target.setVersion(versionMap.get(snmp_vers));
-        walkMap = doWalk(IF_MIB, target); // ifTable, mib-2 interfaces
+        walkMap = walkSNMP(IP, IF_MIB_OID, snmp_comm, snmp_port, snmp_vers); // ifTable, mib-2 interfaces
         for (Map.Entry<String, String> entry : walkMap.entrySet()) {
             keyArray=entry.getKey().replace(".","-").split("-"); // entry.getKey() = .1.3.6.1.2.1.2.2.1.2.*
             ifset.add(keyArray[keyArray.length-1]+":"+entry.getValue());
+            marked_ports=marked_ports+keyArray[keyArray.length-1] +"-";
             //System.out.println(" ifDescr: " + entry.getKey() + " = " + entry.getValue());
             //System.out.println("\n "+keyArray[keyArray.length-1]); 
         }
@@ -59,15 +55,22 @@ public class SnmpWalk {
         System.out.println("\n Ports Set = "+ifset);
         System.out.println("\n Last Port Index  = " + ifset.toArray()[ifset.size()-1].toString().split(":")[0]);        
         System.out.println("\n Version Map = "+versionMap);
+        System.out.println("\n marked_ports = "+marked_ports);
     }
 
-    public static Map<String, String> doWalk(String tableOid, Target target) throws IOException {
+    public static Map<String, String> walkSNMP(String ip, String oid, String comm, String port, String vers) throws IOException {
+        CommunityTarget target = new CommunityTarget();
+        target.setCommunity(new OctetString(comm));
+        target.setAddress(GenericAddress.parse("udp:"+ip+"/"+port)); // supply your own IP and snmp_port
+        target.setRetries(2);
+        target.setTimeout(1000);
+        target.setVersion(versionMap.get(vers));        
         Map<String, String> result = new TreeMap<>();
         TransportMapping<? extends Address> transport = new DefaultUdpTransportMapping();
         Snmp snmp = new Snmp(transport);
         transport.listen();
         TreeUtils treeUtils = new TreeUtils(snmp, new DefaultPDUFactory());
-        List<TreeEvent> events = treeUtils.getSubtree(target, new OID(tableOid));
+        List<TreeEvent> events = treeUtils.getSubtree(target, new OID(oid));
         if (events == null || events.size() == 0) {
             System.out.println("Error: Unable to read table...");
             return result;
@@ -77,7 +80,7 @@ public class SnmpWalk {
                 continue;
             }
             if (event.isError()) {
-                System.out.println("Error: table OID [" + tableOid + "] " + event.getErrorMessage());
+                System.out.println("Error: table OID [" + oid + "] " + event.getErrorMessage());
                 continue;
             }
             VariableBinding[] varBindings = event.getVariableBindings();
