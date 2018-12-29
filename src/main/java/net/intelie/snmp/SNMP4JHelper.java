@@ -1,5 +1,10 @@
-package net.intelie.snmp; 
+package net.intelie.snmp;
 
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.snmp4j.CommunityTarget;
 import org.snmp4j.PDU;
 import org.snmp4j.Snmp;
@@ -12,104 +17,96 @@ import org.snmp4j.transport.DefaultUdpTransportMapping;
 
 public class SNMP4JHelper {
 
-    public static final String READ_COMMUNITY = "public";
-    public static final String WRITE_COMMUNITY = "private";
-    public static final int mSNMPVersion = 0;
-    //public static final String OID_UPS_OUTLET_GROUP1 = "1.3.6.1.4.1.318.1.1.1.12.3.2.1.3.1";
-    //public static final String OID_UPS_BATTERY_CAPACITY = "1.3.6.1.4.1.318.1.1.1.2.2.1.0";
-    public static final String OID_CPU_LOAD_1_MINUTE = "1.3.6.1.4.1.2021.10.1.3.1";
-    public static final String OID_IF_DESCR = ".1.3.6.1.2.1.2.2.1.2.1";
-    public static final String SNMP_PORT = "161";
+    static final String IP = "demo.snmplabs.com";
+    /////
+    static final String OID_IF_BASE = ".1.3.6.1.2.1.2.2.1";
+    static final String IF_DESC = ".2";
+    static final String IF_MTU = ".4";
+    static final String IF_SPEED = ".5";
+    static final String IF_LAST_CHANGE = ".9";
+    static final String IF_INPUT = ".10";
+    static final String IF_OUTPUT = ".16";
+    ////
+    static final String PORT_INDEX = ".2";
+    ///
+    static final String snmp_comm = "public";
+    static final String snmp_vers = "2";//SnmpConstants.version2c;
+    static final String snmp_port = "161";
+    static Map<String, Integer> versionMap = new HashMap<>();
+    ///
+    static final String OID_SYS_BASE = ".1.3.6.1.2.1.1";
+    static final String SYS_DESCR = ".1.0";
+    static final String SYS_UPTIME = ".3.0";
+    static final String SYS_NAME = ".5.0";
+    static String[] sysArray = {
+        SYS_DESCR,
+        SYS_UPTIME,
+        SYS_NAME
+    };
+    static String[] ifArray = {
+        IF_DESC,
+        IF_MTU,
+        IF_SPEED,
+        IF_LAST_CHANGE,
+        IF_INPUT,
+        IF_OUTPUT
+    };
 
-    public static void main(String[] args){
-        try{
-            String strIPAddress = "demo.snmplabs.com"; // = 104.236.166.95
-            SNMP4JHelper objSNMP = new SNMP4JHelper();
-            int Value = 2;
-            //objSNMP.snmpSet(strIPAddress, WRITE_COMMUNITY, OID_UPS_OUTLET_GROUP1, Value);
-            //String batteryCap = objSNMP.snmpGet(strIPAddress, READ_COMMUNITY, OID_UPS_BATTERY_CAPACITY);
-            String CPULoad = objSNMP.snmpGet(strIPAddress, READ_COMMUNITY, OID_IF_DESCR);
-        } 
-        catch (Exception e){
-            e.printStackTrace();
+    static {
+        versionMap.put("1", SnmpConstants.version1);
+        versionMap.put("2", SnmpConstants.version2c);
+        versionMap.put("3", SnmpConstants.version3);
+    }
+
+    public static void main(String[] args) {
+        for (String str : sysArray) {
+            System.out.println(str + " = " + snmpGet(IP, OID_SYS_BASE + str, snmp_comm, snmp_port, snmp_vers));
+        }
+        for (String str : ifArray) {
+            System.out.println(str + " = " + snmpGet(IP, OID_IF_BASE + str + PORT_INDEX, snmp_comm, snmp_port, snmp_vers));
         }
     }
 
-/*    public void snmpSet(String strAddress, String community, String strOID, int Value){
-        
-        strAddress = strAddress + "/"+ SNMP_PORT;
-        Address targetAddress = GenericAddress.parse(strAddress);
-        Snmp snmp;
-        try{
-            TransportMapping transport = new DefaultUdpTransportMapping();
-            snmp = new Snmp(transport);
-            transport.listen();
-            CommunityTarget target = new CommunityTarget();
-            target.setCommunity(new OctetString(community));
-            target.setAddress(targetAddress);
-            target.setRetries(2);
-            target.setTimeout(5000);
-            target.setVersion(SnmpConstants.version1);
-
-            PDU pdu = new PDU();
-            pdu.add(new VariableBinding(new OID(strOID), new Integer32(Value)));
-            pdu.setType(PDU.SET);
-
-            ResponseListener listener = new ResponseListener(){
-                public void onResponse(ResponseEvent event){
-                    ((Snmp)event.getSource()).cancel(event.getRequest(),this);
-                }
-            };
-            snmp.send(pdu,target, null, listener);
-            snmp.close();
-        }
-        catch (Exception e){
-            e.printStackTrace();
-        }
-    }      */
-
-    public String snmpGet(String strAddress, String community, String strOID){
+    public static String snmpGet(String ip, String oid, String comm, String port, String vers) {
         String str = "";
-        try{
-            OctetString com = new OctetString(community);
-            strAddress = strAddress + "/" + SNMP_PORT;
-            Address targetAddress = new UdpAddress(strAddress);
+        Snmp snmp = null;
+        try {
             TransportMapping transport = new DefaultUdpTransportMapping();
             transport.listen();
-
             CommunityTarget comtarget = new CommunityTarget();
-            comtarget.setCommunity(com);
-            comtarget.setVersion(SnmpConstants.version1);
-            comtarget.setAddress(targetAddress);
-            comtarget.setRetries(2);
-            comtarget.setTimeout(1000);
-
+            comtarget.setCommunity(new OctetString(comm));
+            comtarget.setVersion(versionMap.get(vers));
+            comtarget.setAddress(new UdpAddress(ip + "/" + port));
+            comtarget.setRetries(1);
+            comtarget.setTimeout(500);
             PDU pdu = new PDU();
-            ResponseEvent response;
-            Snmp snmp;
-            pdu.add(new VariableBinding(new OID(strOID)));
+            pdu.add(new VariableBinding(new OID(oid)));
             pdu.setType(PDU.GET);
             snmp = new Snmp(transport);
-            response = snmp.get(pdu,comtarget);
-            if (response != null){
-                if(response.getResponse().getErrorStatusText().equalsIgnoreCase("Success")){
+            ResponseEvent response = snmp.get(pdu, comtarget);
+            if (response != null) {
+                if (response.getResponse().getErrorStatusText().equalsIgnoreCase("Success")) {
                     PDU pduresponse = response.getResponse();
                     str = pduresponse.getVariableBindings().firstElement().toString();
-                    if(str.contains("=")){
+                    if (str.contains("=")) {
                         int len = str.indexOf("=");
-                        str = str.substring(len+1,str.length());
+                        str = str.substring(len + 1, str.length());
                     }
                 }
-            }
-            else {
+            } else {
                 System.out.println("TIMEOUT");
             }
             snmp.close();
+        } catch (IOException | NullPointerException e) {
+            return "";
+        } finally {
+            try {
+                snmp.close();
+            } catch (IOException ex) {
+                Logger.getLogger(SNMP4JHelper.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
-        catch (Exception e){
-            e.printStackTrace();
-        }
-        System.out.println("RESPONSE = " + str);
-        return str;
+        return str.trim();
     }
+
 }
