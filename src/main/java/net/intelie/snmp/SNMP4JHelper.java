@@ -18,15 +18,20 @@ import org.snmp4j.transport.DefaultUdpTransportMapping;
 public class SNMP4JHelper {
 
     static final String IP = "demo.snmplabs.com";
-    /////
-    static final String OID_IF_BASE = ".1.3.6.1.2.1.2.2.1";
-    static final String IF_DESC = ".2";
-    static final String IF_MTU = ".4";
-    static final String IF_SPEED = ".5";
-    static final String IF_LAST_CHANGE = ".9";
-    static final String IF_INPUT = ".10";
-    static final String IF_OUTPUT = ".16";
-    ////
+    /////  LOW-SPEED
+    static final String LS_IF_MIB = ".1.3.6.1.2.1.2.2.1";
+    static final String LS_IF_DESC = ".2";
+    static final String LS_IF_MTU = ".4";
+    static final String LS_IF_SPEED = ".5";
+    static final String LS_IF_LAST_CHANGE = ".9";
+    static final String LS_IF_INPUT = ".10";
+    static final String LS_IF_OUTPUT = ".16";
+    /////  HIGH SPEED
+    static final String HS_IF_MIB = ".1.3.6.1.2.1.31.1.1.1";
+    static final String HS_IF_NAME = ".1";
+    static final String HS_IF_INPUT  = ".6";
+    static final String HS_IF_OUTPUT = ".10";    
+    ///
     static final String PORT_INDEX = ".2";
     ///
     static final String snmp_comm = "public";
@@ -43,14 +48,19 @@ public class SNMP4JHelper {
         SYS_UPTIME,
         SYS_NAME
     };
-    static String[] ifArray = {
-        IF_DESC,
-        IF_MTU,
-        IF_SPEED,
-        IF_LAST_CHANGE,
-        IF_INPUT,
-        IF_OUTPUT
+    static String[] LS_ifArray = {
+        LS_IF_DESC,
+        LS_IF_MTU,
+        LS_IF_SPEED,
+        LS_IF_LAST_CHANGE,
+        LS_IF_INPUT,
+        LS_IF_OUTPUT
     };
+    static String[] HS_ifArray = {
+        HS_IF_NAME,
+        HS_IF_INPUT,
+        HS_IF_OUTPUT
+    };    
 
     static {
         versionMap.put("1", SnmpConstants.version1);
@@ -62,9 +72,14 @@ public class SNMP4JHelper {
         for (String str : sysArray) {
             System.out.println(str + " = " + snmpGet(IP, OID_SYS_BASE + str, snmp_comm, snmp_port, snmp_vers));
         }
-        for (String str : ifArray) {
-            System.out.println(str + " = " + snmpGet(IP, OID_IF_BASE + str + PORT_INDEX, snmp_comm, snmp_port, snmp_vers));
+        System.out.println("_______LOW-SPEED IF-MIB:");
+        for (String str : LS_ifArray) {
+            System.out.println(LS_IF_MIB + str + PORT_INDEX + " = " + snmpGet(IP, LS_IF_MIB + str + PORT_INDEX, snmp_comm, snmp_port, snmp_vers));
         }
+        System.out.println("_______HIGH-SPEED IF-MIB:");
+        for (String str : HS_ifArray) {
+            System.out.println(HS_IF_MIB + str + PORT_INDEX + " = " + snmpGet(IP, HS_IF_MIB + str + PORT_INDEX, snmp_comm, snmp_port, snmp_vers));
+        }        
     }
 
     public static String snmpGet(String ip, String oid, String comm, String port, String vers) {
@@ -78,7 +93,7 @@ public class SNMP4JHelper {
             comtarget.setVersion(versionMap.get(vers));
             comtarget.setAddress(new UdpAddress(ip + "/" + port));
             comtarget.setRetries(1);
-            comtarget.setTimeout(500);
+            comtarget.setTimeout(150);
             PDU pdu = new PDU();
             pdu.add(new VariableBinding(new OID(oid)));
             pdu.setType(PDU.GET);
