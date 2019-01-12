@@ -26,7 +26,8 @@ import org.snmp4j.util.TreeUtils;
 
 public class SnmpWalk {
     
-    static String IF_MIB_OID=".1.3.6.1.2.1.2.2.1.2";  // ifDescr
+    static String LS_IF_DESCR=".1.3.6.1.2.1.2.2.1.2";     // ifDescr
+    static String HS_IF_NANE =".1.3.6.1.2.1.31.1.1.1.1";  // ifName
     static Set<String> ifset=new HashSet<>();
     static String IP="demo.snmplabs.com";
     static List<String> keyArray;
@@ -45,9 +46,9 @@ public class SnmpWalk {
     
 
     public static void main(String[] args) throws Exception {
-        walkMap = walkSNMP(IP, IF_MIB_OID, snmp_comm, snmp_port, snmp_vers); // ifTable, mib-2 interfaces
-        keyArray = walkMap.keySet().stream().map(x->x.replace(".","-").split("-")[11]).collect(Collectors.toList());
-        ifset  = walkMap.entrySet().stream().map(x->x.getKey().replace(".","-").split("-")[11]+":"+x.getValue()).collect(Collectors.toSet());
+        walkMap = walkSNMP(IP, HS_IF_NANE, snmp_comm, snmp_port, snmp_vers); // ifTable, mib-2 interfaces
+        keyArray = walkMap.keySet().stream().map(x->x.replace(".","-").split("-")[12]).collect(Collectors.toList());
+        ifset  = walkMap.entrySet().stream().map(x->x.getKey().replace(".","-").split("-")[12]+":"+x.getValue()).collect(Collectors.toSet());
         marked_ports=keyArray.stream().map(x->x+"-").reduce((left, right) -> left + right).get();//.collect(Collectors.toList()).toString();
         //for (Map.Entry<String, String> entry : walkMap.entrySet()) {
             //keyArray=entry.getKey().replace(".","-").split("-"); // entry.getKey() = .1.3.6.1.2.1.2.2.1.2.*
