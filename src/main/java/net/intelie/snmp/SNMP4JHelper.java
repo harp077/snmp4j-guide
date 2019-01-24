@@ -17,7 +17,7 @@ import org.snmp4j.transport.DefaultUdpTransportMapping;
 
 public class SNMP4JHelper {
 
-    static final String IP = "demo.snmplabs.com";
+    static final String IP = "10.73.250.43";
     /////  LOW-SPEED
     static final String LS_IF_MIB = ".1.3.6.1.2.1.2.2.1";
     static final String LS_IF_DESC = ".2";
@@ -32,17 +32,20 @@ public class SNMP4JHelper {
     static final String HS_IF_INPUT  = ".6";
     static final String HS_IF_OUTPUT = ".10";    
     ///
-    static final String PORT_INDEX = ".2";
+    static final String PORT_INDEX = ".3";
     ///
-    static final String snmp_comm = "public";
+    static final String snmp_comm = "look";
     static final String snmp_vers = "2";//SnmpConstants.version2c;
     static final String snmp_port = "161";
     static Map<String, Integer> versionMap = new HashMap<>();
+    static Snmp snmp = null;
+    static TransportMapping transport;    
     ///
     static final String OID_SYS_BASE = ".1.3.6.1.2.1.1";
     static final String SYS_DESCR = ".1.0";
     static final String SYS_UPTIME = ".3.0";
     static final String SYS_NAME = ".5.0";
+    
     static String[] sysArray = {
         SYS_DESCR,
         SYS_UPTIME,
@@ -84,9 +87,10 @@ public class SNMP4JHelper {
 
     public static String snmpGet(String ip, String oid, String comm, String port, String vers) {
         String str = "";
-        Snmp snmp = null;
+        //Snmp snmp = null;
         try {
-            TransportMapping transport = new DefaultUdpTransportMapping();
+            //TransportMapping 
+            transport = new DefaultUdpTransportMapping();
             transport.listen();
             CommunityTarget comtarget = new CommunityTarget();
             comtarget.setCommunity(new OctetString(comm));
